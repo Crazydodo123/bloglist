@@ -29,9 +29,34 @@ const mostBlogs = (blogs) => {
   }
 }
 
+const mostLikes = (blogs) => {
+  let authors = {}
+  
+  blogs.forEach((blog) => {
+    const author = blog.author
+    
+    if (authors[author] === undefined) {
+      authors[author] = blog.likes
+    } else
+      authors[author] += blog.likes
+  })
+  
+  const authorsArr = lodash.toPairs(authors)
+  
+  authorsArr.sort((a, b) => {
+    return b[1] - a[1]
+  })
+  
+  return {
+    author: authorsArr[0][0],
+    likes: authorsArr[0][1]
+  }
+}
+
 module.exports = {
   dummy,
   totalLikes,
   favoriteBlog,
   mostBlogs,
+  mostLikes
 }
