@@ -36,6 +36,7 @@ test('successfully creates a new blog post', async () => {
     title: 'Async or await',
     author: 'Thomas Moore',
     url: 'http://www.blog.com/async-await',
+    likes: 2,
   }
   
   await api
@@ -52,6 +53,40 @@ test('successfully creates a new blog post', async () => {
     'Async or await'
   )
 })
+
+test('likes default to 0 if unspecified', async () => {
+  const newBlogWithoutLikes = {
+    title: 'Async or await',
+    author: 'Thomas Moore',
+    url: 'http://www.blog.com/async-await',
+  }
+  
+  await api
+    .post('/api/blogs')
+    .send(newBlogWithoutLikes)
+    
+  const blogsAtEnd = await helper.blogsInDb()
+  const addedBlog = blogsAtEnd.find(blog => {
+    return blog.title === 'Async or await'
+  })
+  
+  expect(addedBlog.likes).toBe(0)
+})
+
+test('sends status code 400 if title or url is missing', async () => {
+  const badBlog = {
+    author: 'Thomas Moore'
+  }
+  
+  await api
+    .post('/api/blogs')
+    .send(badBlog)
+    .expect(400)
+    
+  const blogsAtEnd = await helper.blogsInDb()
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+})
+
 
 afterAll(async () => {
   await mongoose.connection.close()
