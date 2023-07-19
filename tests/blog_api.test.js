@@ -162,11 +162,59 @@ describe('update of a blog', () => {
     const blogsAtEnd = await helper.blogsInDb()
     
     const updatedBlog = blogsAtEnd.find(blog => {
-      return blog.title === 'React patterns'
+      return blog.title === blogToUpdate.title
     })
     
     expect(updatedBlog).toBeDefined()
     expect(updatedBlog.likes).toBe(4)
+  })
+  
+  test('fails with status code 404 if id does not exist', async () => {
+    const nonExistantId = await helper.badId()
+    
+    const updateBlog = {
+      title: 'Async or await',
+      author: 'Thomas Moore',
+      url: 'http://www.blog.com/async-await',
+      likes: 4
+    }
+    
+    await api
+      .put(`/api/blogs/${nonExistantId}`)
+      .send(updateBlog)
+      .expect(404)
+      
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+    
+    const titles = blogsAtEnd.map(blog => blog.title)
+    expect(titles).not.toContain(
+      'Async or await'
+    )
+  })
+  
+  test('fails with status code 400 if id is invalid', async () => {
+    const invalidId = '12345abcde'
+    
+    const updateBlog = {
+      title: 'Async or await',
+      author: 'Thomas Moore',
+      url: 'http://www.blog.com/async-await',
+      likes: 4
+    }
+    
+    await api
+      .put(`/api/blogs/${invalidId}`)
+      .send(updateBlog)
+      .expect(400)
+      
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+    
+    const titles = blogsAtEnd.map(blog => blog.title)
+    expect(titles).not.toContain(
+      'Async or await'
+    )
   })
 })
 
