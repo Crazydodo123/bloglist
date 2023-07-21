@@ -219,9 +219,6 @@ describe('update of a blog', () => {
 })
 
 
-
-
-
 afterAll(async () => {
   await mongoose.connection.close()
 })
