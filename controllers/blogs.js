@@ -1,7 +1,5 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
-const User = require('../models/user')
-const jwt = require('jsonwebtoken')
 
 blogsRouter.get('/', async (request, response) => {
   const blogs = await Blog
@@ -10,15 +8,11 @@ blogsRouter.get('/', async (request, response) => {
 })
 
 blogsRouter.post('/', async (request, response) => {
+  const user = request.user
   const body = request.body
-  console.log(request.token)
 
-  const decodedToken = jwt.verify(request.token, process.env.SECRET)
-
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: 'token invalid' })
-  }
-  const user = await User.findById(decodedToken.id)
+  if (!user) response.status(401)
+    .json({ error: 'no token was provided' })
 
   const blog = new Blog({
     title: body.title,
@@ -28,29 +22,46 @@ blogsRouter.post('/', async (request, response) => {
     likes: body.likes
   })
   
-
   const result = await blog.save()
   response.status(201).json(result)
 })
 
 
 blogsRouter.delete('/:id', async (request, response) => {
-  await Blog.findByIdAndRemove(request.params.id)
-  response.status(204).end()
+  const user = request.user
+  const blog = await Blog.findById(request.params.id)
+
+  if (!user) response.status(401)
+    .json({ error: 'no token was provided' })
+
+  if (blog.user.toString() === user.id.toString()) {
+    await Blog.findByIdAndDelete(request.params.id)
+    response.status(204).end()
+  } else {
+    response.status(401).json({error: 'user is not authorized to delete this blog'})
+  }
 })
 
 blogsRouter.put('/:id', async (request, response) => {
+  const user = request.user
   const blogUpdate = {...request.body}
-  const updatedNote = await Blog.findByIdAndUpdate(
-    request.params.id,
-    blogUpdate,
-    { new: true, runValidators: true, context: 'query' }
-  )
+
+  const blog = await Blog.findById(request.params.id)
+
+  if (!blog) response.status(404).end()
+  if (!user) response.status(401)
+    .json({ error: 'no token was provided' })
+
+  if (blog.user.toString() === user.id.toString()) {
+    const updatedNote = await Blog.findByIdAndUpdate(
+      request.params.id,
+      blogUpdate,
+      { new: true, runValidators: true, context: 'query' }
+    )
     
-  if (updatedNote) {
     response.json(updatedNote)
   } else {
-    response.status(404).end()
+    response.status(401).json({ error: 'user is not authorized to update this blog' })
   }
 })
 
